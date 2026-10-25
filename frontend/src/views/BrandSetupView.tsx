@@ -140,3 +140,4 @@ export const BrandSetupView: React.FC = () => {
     </div>
   );
 };
+
