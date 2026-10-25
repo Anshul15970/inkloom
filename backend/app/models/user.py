@@ -6,6 +6,8 @@ from app.models.base import UUIDPrimaryKeyMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.brand import BrandMembership
+    from app.models.token import RefreshToken
+    from app.models.invitation import BrandInvitation
 
 
 class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -17,5 +19,13 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    memberships: Mapped[List["BrandMembership"]] = relationship("BrandMembership", back_populates="user", cascade="all, delete-orphan")
-
+    memberships: Mapped[List["BrandMembership"]] = relationship(
+        "BrandMembership",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

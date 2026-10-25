@@ -40,6 +40,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     currentRoute,
     setCurrentRoute,
     setIsAuthenticated,
+    isDemoMode,
+    currentUser,
+    logout,
     brands,
   } = useWorkspace();
 
@@ -52,69 +55,70 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       id: "overview",
       label: "Overview",
       icon: <LayoutDashboard className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "CONTENT_CREATOR", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "CONTENT_CREATOR", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
     },
     {
       id: "creator-studio",
       label: "Creator Studio",
       icon: <Sparkles className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "CONTENT_CREATOR", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "CONTENT_CREATOR", "SUPER_ADMIN"],
       badge: "Live",
     },
     {
       id: "review-queue",
       label: "Review Queue",
       icon: <FileCheck2 className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
       badge: "1 Pending",
     },
     {
       id: "golden-facts",
       label: "Golden Facts",
       icon: <BookOpen className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "CONTENT_CREATOR", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "CONTENT_CREATOR", "SUPER_ADMIN"],
     },
     {
       id: "brand-rules",
       label: "Guardrails & Rules",
       icon: <Sliders className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "SUPER_ADMIN"],
     },
     {
       id: "visual-assets",
       label: "Visual Identity",
       icon: <Palette className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "SUPER_ADMIN"],
     },
     {
       id: "audit-history",
       label: "Audit History",
       icon: <History className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "CONTENT_CREATOR", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "CONTENT_CREATOR", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
     },
     {
       id: "analytics",
       label: "Governance Analytics",
       icon: <BarChart3 className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "COMPLIANCE_REVIEWER", "SUPER_ADMIN"],
     },
     {
       id: "brand-setup",
       label: "Brand Profile",
       icon: <Building2 className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "SUPER_ADMIN"],
     },
     {
       id: "settings",
       label: "Workspace Settings",
       icon: <SettingsIcon className="h-4 w-4" />,
-      roles: ["BRAND_MANAGER", "SUPER_ADMIN"],
+      roles: ["OWNER", "BRAND_MANAGER", "SUPER_ADMIN"],
     },
   ];
 
   const filteredNavItems = navItems.filter((item) => item.roles.includes(activeRole));
 
   const roleLabels: Record<UserRole, string> = {
+    OWNER: "Brand Owner",
     BRAND_MANAGER: "Brand Manager",
     CONTENT_CREATOR: "Content Creator",
     COMPLIANCE_REVIEWER: "Compliance Reviewer",
@@ -274,10 +278,10 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </div>
 
           <button
-            onClick={() => setIsAuthenticated(false)}
+            onClick={() => (isDemoMode ? setIsAuthenticated(false) : logout())}
             className="w-full flex items-center justify-center gap-2 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 py-1.5 transition-colors"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to Public Site
+            <ArrowLeft className="h-3.5 w-3.5" /> {isDemoMode ? "Exit Demo" : "Sign Out"}
           </button>
         </div>
       </aside>
@@ -307,10 +311,17 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           {/* Right Header Badges */}
           <div className="flex items-center gap-3">
             {/* Demo Mode Notice */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] font-medium text-amber-800 dark:text-amber-300">
-              <Info className="h-3.5 w-3.5 text-amber-500" />
-              <span>Demo Mode (Synthetic Ground Truth)</span>
-            </div>
+            {isDemoMode ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                <Info className="h-3.5 w-3.5 text-amber-500" />
+                <span>Demo Mode (Synthetic Ground Truth)</span>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-[11px] font-medium text-emerald-800 dark:text-emerald-300">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span>{currentUser ? currentUser.email : "Tenant Workspace Active"}</span>
+              </div>
+            )}
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 

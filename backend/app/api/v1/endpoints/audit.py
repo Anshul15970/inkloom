@@ -1,15 +1,16 @@
 import uuid
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.models.fact import GoldenFact
-from app.models.rule import BrandRule, VisualAsset
+from app.models.rule import BrandRule
 from app.models.audit import AuditRecord, AuditFinding, AuditStatus
 from app.models.review import ReviewItem, ReviewStatus
-from app.api.deps import get_tenant_context, TenantContext
+from app.core.permissions import Permission
+from app.api.deps import require_permission, TenantContext
 from app.services.ai.gemini import GeminiProvider
 from app.services.vision.deterministic import DeterministicVisionChecker
 
@@ -35,6 +36,7 @@ class FindingDTO(BaseModel):
 
 class AuditResponse(BaseModel):
     audit_id: str
+    brand_id: str
     overall_score: int
     status: str
     summary: str
@@ -56,10 +58,11 @@ class EscalateResponse(BaseModel):
 async def audit_text(
     brand_id: uuid.UUID,
     payload: TextAuditRequest,
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_permission(Permission.AUDIT_CREATE)),
     db: AsyncSession = Depends(get_db),
 ):
-    # 1. Fetch active golden facts for this brand
+    """Executes a text compliance evaluation. Strictly scoped to tenant's golden facts and rules."""
+    # 1. Fetch active golden facts for this brand only
     facts_res = await db.execute(
         select(GoldenFact).where(GoldenFact.brand_id == tenant.brand_id, GoldenFact.is_active.is_(True))
     )
@@ -75,7 +78,7 @@ async def audit_text(
         for f in facts
     ]
 
-    # 2. Fetch active rules for this brand
+    # 2. Fetch active rules for this brand only
     rules_res = await db.execute(
         select(BrandRule).where(BrandRule.brand_id == tenant.brand_id, BrandRule.is_active.is_(True))
     )
@@ -102,14 +105,14 @@ async def audit_text(
         channel=payload.channel,
     )
 
-    # 4. Determine overall audit status
+    # 4. Determine status
     audit_status = AuditStatus.PASSED
     if result.overall_score < 70 or any(f.severity == "CRITICAL" for f in result.findings):
         audit_status = AuditStatus.NEEDS_REVIEW
     elif result.findings:
         audit_status = AuditStatus.WARNINGS_RESOLVABLE
 
-    # 5. Persist audit record and findings
+    # 5. Save audit record under tenant
     record = AuditRecord(
         brand_id=tenant.brand_id,
         user_id=tenant.user.id,
@@ -151,6 +154,7 @@ async def audit_text(
 
     return AuditResponse(
         audit_id=str(record.id),
+        brand_id=str(record.brand_id),
         overall_score=result.overall_score,
         status=audit_status,
         summary=result.summary,
@@ -158,66 +162,36 @@ async def audit_text(
     )
 
 
-@router.post("/{brand_id}/audit/image", response_model=AuditResponse)
-async def audit_image(
+@router.get("/{brand_id}/audit/{audit_id}", response_model=AuditResponse)
+async def get_audit(
     brand_id: uuid.UUID,
-    file: UploadFile = File(...),
-    channel: str = Form("general"),
-    tenant: TenantContext = Depends(get_tenant_context),
+    audit_id: uuid.UUID,
+    tenant: TenantContext = Depends(require_permission(Permission.AUDIT_READ)),
     db: AsyncSession = Depends(get_db),
 ):
-    image_bytes = await file.read()
-    
-    # Retrieve brand visual assets (e.g. hex colors)
-    # Default brand colors if none stored
-    approved_hexes = ["#0F172A", "#3B82F6", "#10B981", "#FFFFFF"]
-
-    # 1. Deterministic OpenCV audit
-    cv_res = vision_checker.audit_image(
-        image_bytes=image_bytes,
-        approved_brand_hex_codes=approved_hexes,
-        channel=channel,
-    )
-
-    # 2. Qualitative Gemini Vibe audit
-    vibe_res = await ai_provider.analyze_image_vibe(
-        image_bytes=image_bytes,
-        mime_type=file.content_type or "image/png",
-        brand_name=tenant.brand.name,
-        aesthetic_guidelines="Clean, corporate, professional typography and balanced lighting.",
-        reference_descriptions=["Corporate brand photography, minimalist aesthetic"],
-    )
-
-    combined_score = int((cv_res.overall_visual_score * 0.6) + (vibe_res.vibe_score * 0.4))
-    audit_status = AuditStatus.PASSED if combined_score >= 80 else AuditStatus.WARNINGS_RESOLVABLE
-
-    record = AuditRecord(
-        brand_id=tenant.brand_id,
-        user_id=tenant.user.id,
-        channel=channel,
-        content_type="IMAGE",
-        overall_score=combined_score,
-        status=audit_status,
-        input_text=f"Uploaded image: {file.filename} ({cv_res.dimensions[0]}x{cv_res.dimensions[1]})",
-    )
-    db.add(record)
-    await db.flush()
-
-    finding_dtos = []
-    # Add findings for off-brand colors or aspect ratio
-    if not cv_res.is_aspect_ratio_compliant:
-        f = AuditFinding(
-            audit_id=record.id,
-            finding_type="ASPECT_RATIO_MISMATCH",
-            severity="WARNING",
-            original_snippet=f"Detected aspect ratio {cv_res.aspect_ratio}",
-            explanation=f"Channel {channel} requires aspect ratio {cv_res.target_channel_spec}",
-            citation_reference="Social Media Visual Specifications",
-            suggested_fix=f"Crop image to {cv_res.target_channel_spec}",
+    """Retrieves an audit report. Prevents IDOR by querying strictly by brand_id."""
+    res = await db.execute(
+        select(AuditRecord).where(
+            AuditRecord.id == audit_id,
+            AuditRecord.brand_id == tenant.brand_id,
         )
-        db.add(f)
-        await db.flush()
-        finding_dtos.append(
+    )
+    audit = res.scalars().first()
+    if not audit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit record not found in this brand")
+
+    findings_res = await db.execute(
+        select(AuditFinding).where(AuditFinding.audit_id == audit.id)
+    )
+    findings = findings_res.scalars().all()
+
+    return AuditResponse(
+        audit_id=str(audit.id),
+        brand_id=str(audit.brand_id),
+        overall_score=audit.overall_score,
+        status=audit.status,
+        summary=f"Audit completed with score {audit.overall_score}/100.",
+        findings=[
             FindingDTO(
                 id=str(f.id),
                 finding_type=f.finding_type,
@@ -227,41 +201,8 @@ async def audit_image(
                 citation_reference=f.citation_reference,
                 suggested_fix=f.suggested_fix,
             )
-        )
-
-    for c in cv_res.color_findings:
-        if not c.is_compliant:
-            f = AuditFinding(
-                audit_id=record.id,
-                finding_type="COLOR_MISMATCH",
-                severity="WARNING",
-                original_snippet=f"Dominant hex {c.extracted_hex} ({c.percentage_coverage}% coverage)",
-                explanation=f"Color is not within permitted brand palette (nearest brand swatch: {c.nearest_brand_hex}, Delta-E: {c.distance_delta_e})",
-                citation_reference="Brand Color Palette Guidelines",
-                suggested_fix=f"Adjust tint or color overlay towards approved brand hex {c.nearest_brand_hex}",
-            )
-            db.add(f)
-            await db.flush()
-            finding_dtos.append(
-                FindingDTO(
-                    id=str(f.id),
-                    finding_type=f.finding_type,
-                    severity=f.severity,
-                    original_snippet=f.original_snippet,
-                    explanation=f.explanation,
-                    citation_reference=f.citation_reference,
-                    suggested_fix=f.suggested_fix,
-                )
-            )
-
-    await db.commit()
-
-    return AuditResponse(
-        audit_id=str(record.id),
-        overall_score=combined_score,
-        status=audit_status,
-        summary=f"{cv_res.summary} Aesthetic critique: {vibe_res.aesthetic_critique}",
-        findings=finding_dtos,
+            for f in findings
+        ],
     )
 
 
@@ -270,22 +211,26 @@ async def escalate_audit(
     brand_id: uuid.UUID,
     audit_id: uuid.UUID,
     payload: EscalateAuditRequest,
-    tenant: TenantContext = Depends(get_tenant_context),
+    tenant: TenantContext = Depends(require_permission(Permission.AUDIT_CREATE)),
     db: AsyncSession = Depends(get_db),
 ):
+    """Escalates a flagged audit to the brand review queue. Enforces tenant scope."""
     res = await db.execute(
-        select(AuditRecord).where(AuditRecord.id == audit_id, AuditRecord.brand_id == tenant.brand_id)
+        select(AuditRecord).where(
+            AuditRecord.id == audit_id,
+            AuditRecord.brand_id == tenant.brand_id,
+        )
     )
     audit = res.scalars().first()
     if not audit:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit record not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit record not found in this brand")
 
     review_item = ReviewItem(
         brand_id=tenant.brand_id,
         audit_id=audit.id,
         submitted_by_id=tenant.user.id,
         status=ReviewStatus.PENDING,
-        creator_notes=payload.creator_notes,
+        creator_notes=payload.creator_notes.strip(),
     )
     audit.status = AuditStatus.NEEDS_REVIEW
     db.add(review_item)
@@ -298,4 +243,3 @@ async def escalate_audit(
         status=review_item.status,
         message="Draft successfully escalated to brand review queue.",
     )
-

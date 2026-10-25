@@ -1,5 +1,5 @@
+import os
 from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,9 +15,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
 
-    # Security & JWT
+    # Security & Tokens
     SECRET_KEY: str = "inkloom-development-insecure-secret-key-change-in-prod-0123456789"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30    # 30 days
     ALGORITHM: str = "HS256"
 
     # Database
@@ -53,4 +54,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

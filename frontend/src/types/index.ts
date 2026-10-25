@@ -1,4 +1,28 @@
-export type UserRole = "BRAND_MANAGER" | "CONTENT_CREATOR" | "COMPLIANCE_REVIEWER" | "SUPER_ADMIN";
+export type UserRole = "OWNER" | "BRAND_MANAGER" | "CONTENT_CREATOR" | "COMPLIANCE_REVIEWER" | "SUPER_ADMIN";
+
+export interface UserMembership {
+  brand_id: string;
+  brand_name: string;
+  brand_slug: string;
+  role: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  is_superuser: boolean;
+  memberships: UserMembership[];
+}
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in_minutes: number;
+  user: UserProfile;
+}
 
 export type RouteId =
   | "overview"

@@ -24,7 +24,7 @@ import { Input } from "../design-system/FormControls";
 import { useNotification } from "../context/NotificationContext";
 
 export const LandingView: React.FC = () => {
-  const { setIsAuthenticated, setCurrentRoute } = useWorkspace();
+  const { setIsAuthenticated, setCurrentRoute, setIsDemoMode, login, registerBrand } = useWorkspace();
   const { showToast } = useNotification();
 
   const [authModal, setAuthModal] = useState<"login" | "register" | null>(null);
@@ -33,8 +33,11 @@ export const LandingView: React.FC = () => {
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLaunchDemo = () => {
+    setIsDemoMode(true);
     setIsAuthenticated(true);
     setCurrentRoute("overview");
     showToast({
@@ -44,21 +47,47 @@ export const LandingView: React.FC = () => {
     });
   };
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes("@")) {
       setEmailError("Please enter a valid business email address.");
       return;
     }
     setEmailError("");
-    setAuthModal(null);
-    setIsAuthenticated(true);
-    setCurrentRoute("overview");
-    showToast({
-      type: "success",
-      title: authModal === "register" ? "Account Provisioned" : "Authenticated Successfully",
-      message: "Redirecting to your brand governance workspace.",
-    });
+    setAuthError("");
+    setIsLoading(true);
+
+    try {
+      if (authModal === "register") {
+        const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        await registerBrand({
+          email,
+          password,
+          full_name: fullName,
+          brand_name: companyName,
+          brand_slug: slug || "my-brand",
+        });
+        showToast({
+          type: "success",
+          title: "Account Provisioned",
+          message: "Organization workspace created. You are the brand owner.",
+        });
+      } else {
+        await login({ email, password });
+        showToast({
+          type: "success",
+          title: "Authenticated Successfully",
+          message: "Signed in to your authorized brand workspace.",
+        });
+      }
+
+      setAuthModal(null);
+      setCurrentRoute("overview");
+    } catch (err: any) {
+      setAuthError(err.message || "Authentication failed. Please check credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -409,6 +438,12 @@ export const LandingView: React.FC = () => {
         }
       >
         <form onSubmit={handleAuthSubmit} className="space-y-4">
+          {authError && (
+            <div className="p-3 text-xs rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-700 dark:text-red-400">
+              {authError}
+            </div>
+          )}
+
           {authModal === "register" && (
             <>
               <Input
@@ -444,7 +479,7 @@ export const LandingView: React.FC = () => {
           <Input
             label="Password"
             type="password"
-            placeholder="••••••••••••"
+            placeholder="Min. 8 chars, Aa1"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -455,11 +490,14 @@ export const LandingView: React.FC = () => {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => setAuthModal(authModal === "register" ? "login" : "register")}
+              onClick={() => {
+                setAuthError("");
+                setAuthModal(authModal === "register" ? "login" : "register");
+              }}
             >
               {authModal === "register" ? "Already have an account? Sign in" : "Need an account? Register"}
             </Button>
-            <Button type="submit" variant="primary" size="sm">
+            <Button type="submit" variant="primary" size="sm" isLoading={isLoading}>
               {authModal === "register" ? "Create Account" : "Sign In"}
             </Button>
           </div>
