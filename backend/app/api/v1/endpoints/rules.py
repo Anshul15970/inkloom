@@ -89,3 +89,4 @@ async def create_brand_rule(
         applies_to_channels=rule.applies_to_channels,
         is_active=rule.is_active,
     )
+

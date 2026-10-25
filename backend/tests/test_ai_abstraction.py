@@ -46,3 +46,4 @@ async def test_mock_embedding_generation():
     embeddings = await provider.generate_embeddings(["Acme Cloud SLA is 99.99%"])
     assert len(embeddings) == 1
     assert len(embeddings[0]) == 768
+

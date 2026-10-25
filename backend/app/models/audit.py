@@ -49,3 +49,4 @@ class AuditFinding(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_accepted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     audit: Mapped["AuditRecord"] = relationship("AuditRecord", back_populates="findings")
+

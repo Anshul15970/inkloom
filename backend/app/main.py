@@ -30,3 +30,4 @@ async def root():
         "api_version": "v1",
         "status": "operational",
     }
+

@@ -47,3 +47,4 @@ class BrandMembership(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("user_id", "brand_id", name="uq_user_brand_membership"),
     )
+

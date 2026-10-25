@@ -169,3 +169,4 @@ class DeterministicVisionChecker:
             logo_detected=logo_detected,
             summary=summary,
         )
+

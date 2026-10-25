@@ -47,3 +47,4 @@ class GoldenFactEmbedding(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_fact_embedding_brand_id", "brand_id"),
     )
+

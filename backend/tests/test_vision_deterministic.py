@@ -42,3 +42,4 @@ def test_audit_image_colors_and_ratio():
     assert result.overall_visual_score >= 80
     assert len(result.color_findings) > 0
     assert result.color_findings[0].is_compliant is True
+

@@ -96,3 +96,4 @@ class PgVectorStore(BaseVectorStore):
         result = await self.session.execute(stmt)
         await self.session.commit()
         return result.rowcount
+

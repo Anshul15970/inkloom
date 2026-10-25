@@ -18,3 +18,4 @@ async def health_check():
             "vision_engine": "opencv_deterministic",
         }
     }
+

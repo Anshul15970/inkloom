@@ -237,3 +237,4 @@ Return ONLY a valid JSON object matching this schema:
             else f"Flagged {len(findings)} governance compliance issue(s) needing resolution."
         )
         return ComplianceAnalysisResult(overall_score=score, summary=summary, findings=findings)
+

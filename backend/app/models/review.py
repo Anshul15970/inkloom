@@ -34,3 +34,4 @@ class ReviewItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     audit: Mapped["AuditRecord"] = relationship("AuditRecord", back_populates="review_item")
     submitted_by: Mapped["User"] = relationship("User", foreign_keys=[submitted_by_id])
     reviewed_by: Mapped["User"] = relationship("User", foreign_keys=[reviewed_by_id])
+

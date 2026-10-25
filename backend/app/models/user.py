@@ -18,3 +18,4 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     memberships: Mapped[List["BrandMembership"]] = relationship("BrandMembership", back_populates="user", cascade="all, delete-orphan")
+

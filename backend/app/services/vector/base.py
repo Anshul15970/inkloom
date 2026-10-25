@@ -42,3 +42,4 @@ class BaseVectorStore(ABC):
     async def delete_by_brand(self, brand_id: uuid.UUID) -> int:
         """Purges all vector embeddings for a given brand."""
         pass
+

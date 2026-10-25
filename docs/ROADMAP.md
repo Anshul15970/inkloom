@@ -30,3 +30,4 @@
 - [ ] Analytics dashboard: recurring violations, compliance trend tracking
 - [ ] Comprehensive unit and integration test suite
 - [ ] Docker compose orchestration for local developer setup
+

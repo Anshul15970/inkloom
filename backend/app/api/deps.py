@@ -80,3 +80,4 @@ async def get_tenant_context(
         raise TenantAccessDeniedException(f"User is not a member of brand {brand.name}")
 
     return TenantContext(brand=brand, membership=membership, user=current_user)
+

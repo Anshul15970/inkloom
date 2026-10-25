@@ -48,3 +48,4 @@ class VisualAsset(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
     metadata_json = mapped_column(JSONB, default=dict, nullable=False)  # hex colors, margins, aspect ratios
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+

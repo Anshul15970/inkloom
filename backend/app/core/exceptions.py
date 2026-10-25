@@ -19,3 +19,4 @@ class InsufficientPermissionsException(HTTPException):
 class AuthenticationFailedException(HTTPException):
     def __init__(self, detail: str = "Invalid credentials"):
         super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
+

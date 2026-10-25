@@ -10,3 +10,4 @@ api_router.include_router(facts.router, prefix="/brands", tags=["Golden Facts"])
 api_router.include_router(rules.router, prefix="/brands", tags=["Brand Rules & Guardrails"])
 api_router.include_router(audit.router, prefix="/brands", tags=["AI Governance Audit"])
 api_router.include_router(reviews.router, prefix="/brands", tags=["Human Review Queue"])
+

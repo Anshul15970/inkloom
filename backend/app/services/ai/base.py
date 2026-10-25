@@ -57,3 +57,4 @@ class BaseLLMProvider(ABC):
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generate vector embeddings for text chunks."""
         pass
+

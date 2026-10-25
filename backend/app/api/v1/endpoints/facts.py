@@ -81,3 +81,4 @@ async def create_golden_fact(
         source_document=fact.source_document,
         is_active=fact.is_active,
     )
+

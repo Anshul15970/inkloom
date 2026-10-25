@@ -8,3 +8,4 @@ For the complete architectural design, data isolation model, and system diagrams
 - Chrome Manifest V3 Extension Architecture
 - FastAPI RESTful API Specification
 - React + Tailwind Creator Studio & Admin Dashboard Route Map
+

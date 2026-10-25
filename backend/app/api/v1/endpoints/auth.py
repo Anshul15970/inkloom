@@ -114,3 +114,4 @@ async def login(payload: UserLoginRequest, db: AsyncSession = Depends(get_db)):
             memberships=memberships,
         )
     )
+
