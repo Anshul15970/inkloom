@@ -1,0 +1,36 @@
+/* Inkloom In-Context Overlay Styles */
+.inkloom-highlight-warning {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+  border-bottom: 2px dashed #f59e0b !important;
+  cursor: pointer;
+}
+
+.inkloom-highlight-critical {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+  border-bottom: 2px solid #ef4444 !important;
+  cursor: pointer;
+}
+
+.inkloom-floating-badge {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  z-index: 999999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease;
+}
+
+.inkloom-floating-badge:hover {
+  transform: translateY(-2px);
+}

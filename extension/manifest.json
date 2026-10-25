@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Inkloom — AI Brand Governance Assistant",
+  "version": "1.0.0",
+  "description": "Real-time AI brand governance, claim verification, and visual identity checks embedded in your publishing workflow.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "sidePanel",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Inkloom Brand Assistant"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"]
+    }
+  ]
+}
